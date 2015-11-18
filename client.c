@@ -14,6 +14,8 @@ typedef struct sockaddr_in 	sockaddr_in;
 typedef struct hostent 		hostent;
 typedef struct servent 		servent;
 
+void initialiser_buffer(char *buffer);
+int str_istr (const char *cs, const char *ct);
 int main(int argc, char **argv) {
   
     int 	socket_descriptor, 	/* descripteur de socket */
@@ -89,21 +91,31 @@ int main(int argc, char **argv) {
 	exit(1);
     }*/
     
-    /* mise en attente du prgramme pour simuler un delai de transmission */
+    /* mise en attente du programme pour simuler un delai de transmission */
     sleep(3);
      
     printf("message envoye au serveur. \n");
                 
     /* lecture de la reponse en provenance du serveur */
     while((longueur = read(socket_descriptor, buffer, sizeof(buffer))) > 0) {
-		if (strcmp(buffer, "Une partie est déjà commencée") == 0 ){
+		/* erreur trouver comment retrouver une sous chaine de caractère, analyser le contenu
+		 * du buffer pour savoir quel cas utiliser, ne fonctionne pas pour le moment */
+		if (strcmp(buffer, "Une partie est déjà commencée") == 0){
 			write(1,buffer,longueur);
 			close(socket_descriptor);
 			exit(0);
 		}else{
 			write(1,buffer,longueur);
 		}
+		if (str_istr(buffer, "\n C'est à votre tour de lancer les dés, êtes vous prêt?Y/N \n") >= 0 
+			|| str_istr(buffer, "êtes vous prêt?Y/N \n") >= 0)
+			{
+				printf("tour");
+				scanf("%s",mesg);
+				write(socket_descriptor, mesg, strlen(mesg));
+			}
 	}
+	
     
     printf("\nfin de la reception.\n");
     
@@ -114,3 +126,31 @@ int main(int argc, char **argv) {
     exit(0);
     
 }
+
+void initialiser_buffer(char *buffer)
+{
+	int i;
+	int l = strlen(buffer);
+	for(i=0;i<l;i++)
+	{
+		buffer[i] = '\0';
+	}
+}
+
+int str_istr (const char *ct,const char *cs)
+{
+   int index = -1;
+   if (cs != NULL && ct != NULL)
+   {
+      char *ptr_pos = NULL;
+
+      ptr_pos = strstr (cs, ct);
+      if (ptr_pos != NULL)
+      {
+         index = ptr_pos - cs;
+      }
+   }
+   return index;
+}
+
+

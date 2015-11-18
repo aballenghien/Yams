@@ -17,6 +17,7 @@
 #define NB_JOUEURS 2
 #define NB_DES 5
 #define NB_PARTIES 10
+#define NB_VALEUR_DE 6
 
 typedef struct hostent hostent;
 typedef struct servent servent;
@@ -32,9 +33,10 @@ joueur;
  
 //the thread function
 void *connection_handler(void *);
-void jouer_partie_yams(joueur *);
-void lancer_des(joueur *, int numJoueur, int *tab_des[]);
-void calculer_score(int numJoueur, int numPartie, int *tab_des[], int *tab_score[][]);
+void jouer_partie_yams(joueur joueurs[]);
+void lancer_des(joueur joueurs[], int numJoueur, int *tab_des);
+void calculer_score(int numJoueur, int numPartie, int *tab_des, int *tab_score);
+void initialiser_tab_des(int *tab_des);
  
 int main(int argc , char *argv[])
 {
@@ -47,8 +49,6 @@ int main(int argc , char *argv[])
     char 			*message;
     joueur 			joueurs[NB_JOUEURS];
     char 			messageJoueur[25];
-    int 			tab_des[NB_DES];
-    int				tab_score[NB_JOUEURS][NB_PARTIES+1];
 
     gethostname(machine,TAILLE_MAX_NOM);		/* recuperation du nom de la machine */
     
@@ -99,6 +99,7 @@ int main(int argc , char *argv[])
     while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)))
     {
         puts("Connection accepted");
+        // créer des thread et les rattacher au joueur tant que le nombre de joueur n'est pas atteint
         if (nb_connexions < NB_JOUEURS){
 			if( pthread_create( &joueurs[nb_connexions].thread_joueur , NULL ,  connection_handler , (void*) &client_sock) < 0)
 			{
@@ -109,12 +110,16 @@ int main(int argc , char *argv[])
 			//pthread_join( thread_id , NULL);
 			
 			puts("Handler assigned");
+			// on attribue un socket, un thread et un numéro à chaque joueur puis on leur annonce
 			joueurs[nb_connexions].socket = client_sock;
 			joueurs[nb_connexions].numeroJ = nb_connexions+1;
 			sprintf(messageJoueur,"Vous êtes le joueur : %d \n",nb_connexions+1);
 			write(client_sock,messageJoueur, strlen(messageJoueur));
 			
 		}else{
+			// indiquer au client que le nombre de joueur est atteint
+			message = "erreur";
+			write(client_sock,message, strlen(message));
 			message = "Une partie est déjà commencée";
 			write(client_sock,message, strlen(message));
 		}        
@@ -122,7 +127,7 @@ int main(int argc , char *argv[])
         nb_connexions = nb_connexions + 1;
         puts("accept");
         if(nb_connexions == NB_JOUEURS){
-			puts("sortie");
+			// débuter la partie une fois que tous les joueurs ont rejoint la partie
 			sleep(5);
 			jouer_partie_yams(joueurs);
 		}
@@ -153,9 +158,10 @@ void jouer_partie_yams(joueur *joueurs)
 {
 	int numPartie;
 	int numJoueur;
+    int tab_des[NB_DES];
+    int	tab_score[NB_JOUEURS][NB_PARTIES+1];
 	
 	numPartie = 1;
-	puts ("jouer_partie_yams");
 	int i;
 	char *message;
 	for(i=0; i< NB_JOUEURS; i++)
@@ -164,8 +170,97 @@ void jouer_partie_yams(joueur *joueurs)
 		write(joueurs[i].socket,message, strlen(message));
 	}
 	
-	for(numPartie = 1; i <= NB_PARTIES; numPartie++)
+	//les joueurs joueront  en tout 10 fois chacun leur tour 
+	for(numPartie = 1; numPartie <= NB_PARTIES; numPartie++)
 	{
+		for (numJoueur = 1; numJoueur <= NB_JOUEURS; numJoueur++)
+		{
+			// remplissage du tableau avec des valeurs aléatoire du dés
+			lancer_des(joueurs, numJoueur, tab_des);
+		}
 	}
 	
 }
+
+void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
+	char tour[26];
+	char *message, client_message[1];
+	int i, read_size;
+	char lance_de_des[19];
+	int ok;
+	
+	// on attend que le joueur soir prêt pour lancer les dés
+	//ne fonctionne pas pour l'instant
+	for (i = 0; i < NB_JOUEURS; i++)
+	{
+		sprintf(tour, "C'est le tour du joueur %d", numJoueur);
+		write(joueurs[i].socket, tour, strlen(tour));
+	}
+	message = "\n C'est à votre tour de lancer les dés, êtes vous prêt?Y/N \n";
+	write(joueurs[numJoueur-1].socket, message, strlen(message));
+	ok = 0;
+	do{
+		
+		read_size = recv(joueurs[numJoueur-1].socket, client_message, 1,0);
+		if(read_size > 0)
+		{
+			printf("réponse");
+			toupper(client_message);
+			if(strcmp(client_message, "Y")==0)
+			{			
+				ok = 1;
+			}else{
+				message = "êtes vous prêt?Y/N \n";
+				write(joueurs[numJoueur-1].socket, message, strlen(message));
+			}
+		}
+	}while(ok == 0);
+	
+	if(ok == 1)
+	{
+		// on remplit le tableau avec 5 valeurs aléatoire comprises en tre 1 et 6
+		initialiser_tab_des(tab_des);
+		for(i = 0; i < NB_DES; i++)
+		{
+			tab_des[i] = rand()%(NB_VALEUR_DE-1)+1;
+			sprintf(lance_de_des,"%d",tab_des[i]);
+			strcat(lance_de_des, "|");
+		}
+		
+		//on affiche le tableau côté client
+		for (i = 0; i < NB_JOUEURS; i++)
+		{
+			message = "Résultat du lancer: \n du joueur";
+			write(joueurs[i].socket, message, strlen(message));
+			write(joueurs[i].socket, lance_de_des, strlen(lance_de_des));
+		}
+		
+		
+	}
+	
+}
+
+void initialiser_tab_des(int *tab_des)
+{
+	int i;
+	for(i = 0; i < NB_DES; i++)
+	{
+		tab_des[i] = 0;
+	}
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
