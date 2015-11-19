@@ -18,6 +18,7 @@
 #define NB_DES 5
 #define NB_PARTIES 10
 #define NB_VALEUR_DE 6
+#define BUF_SIZE 256
 
 typedef struct hostent hostent;
 typedef struct servent servent;
@@ -33,10 +34,11 @@ joueur;
  
 //the thread function
 void *connection_handler(void *);
-void jouer_partie_yams(joueur joueurs[]);
+void jouer_partie_yams(joueur joueurs[], char *buffer);
 void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]);
-void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[][]);
+void calculer_score(int numJoueur, int numPartie, int tab_des[], int *tab_score);
 void initialiser_tab_des(int tab_des[]);
+int read_client(int sock, char *buffer);
  
 int main(int argc , char *argv[])
 {
@@ -46,7 +48,7 @@ int main(int argc , char *argv[])
     servent*		ptr_service; 			/* les infos recuperees sur le service de la machine */
     char 			machine[TAILLE_MAX_NOM+1]; 	/* nom de la machine locale */
     int 			nb_connexions;
-    char 			*message;
+    char 			buffer[BUF_SIZE];
     joueur 			joueurs[NB_JOUEURS];
     char 			messageJoueur[25];
 
@@ -118,10 +120,10 @@ int main(int argc , char *argv[])
 			
 		}else{
 			// indiquer au client que le nombre de joueur est atteint
-			message = "erreur";
-			write(client_sock,message, strlen(message));
-			message = "Une partie est déjà commencée";
-			write(client_sock,message, strlen(message));
+			sprintf(buffer, "erreur");
+			write(client_sock,buffer, strlen(buffer));
+			sprintf(buffer,"Une partie est déjà commencée");
+			write(client_sock,buffer, strlen(buffer));
 		}        
         
         nb_connexions = nb_connexions + 1;
@@ -129,7 +131,7 @@ int main(int argc , char *argv[])
         if(nb_connexions == NB_JOUEURS){
 			// débuter la partie une fois que tous les joueurs ont rejoint la partie
 			sleep(5);
-			jouer_partie_yams(joueurs);
+			jouer_partie_yams(joueurs, buffer);
 		}
     }
     
@@ -150,11 +152,11 @@ int main(int argc , char *argv[])
 void *connection_handler(void *socket_desc)
 {
     int sock = *(int*)socket_desc;
-    char *message , client_message[2000];  
+    char *buffer , client_message[2000];  
     return 0;
 } 
 
-void jouer_partie_yams(joueur joueurs[])
+void jouer_partie_yams(joueur joueurs[], char *buffer)
 {
 	int numPartie;
 	int numJoueur;
@@ -166,8 +168,8 @@ void jouer_partie_yams(joueur joueurs[])
 	char *message;
 	for(i=0; i< NB_JOUEURS; i++)
 	{
-		message = "Bonjour tout le monde\n";
-		write(joueurs[i].socket,message, strlen(message));
+		sprintf(buffer,"Bonjour tout le monde\n");
+		write(joueurs[i].socket,buffer, strlen(buffer));
 	}
 	
 	//les joueurs joueront  en tout 10 fois chacun leur tour 
@@ -184,10 +186,11 @@ void jouer_partie_yams(joueur joueurs[])
 
 void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 	char tour[26];
-	char *message, client_message[1];
+	char *buffer, client_message[1];
 	int i, read_size;
 	char lance_de_des[19];
 	int ok;
+	char de[1];
 	
 	// on attend que le joueur soir prêt pour lancer les dés
 	//ne fonctionne pas pour l'instant
@@ -196,22 +199,22 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 		sprintf(tour, "C'est le tour du joueur %d", numJoueur);
 		write(joueurs[i].socket, tour, strlen(tour));
 	}
-	message = "\n C'est à votre tour de lancer les dés, êtes vous prêt?Y/N \n";
-	write(joueurs[numJoueur-1].socket, message, strlen(message));
+	sprintf(buffer, "\n C'est à votre tour de lancer les dés, êtes vous prêt?Y/N \n");
+	write(joueurs[numJoueur-1].socket, buffer, strlen(buffer));
 	ok = 0;
 	do{
 		
-		read_size = recv(joueurs[numJoueur-1].socket, client_message, 1,0);
+		read_size = read_client(joueurs[numJoueur-1].socket, buffer);
 		if(read_size > 0)
 		{
-			printf("réponse");
-			toupper(client_message);
-			if(strcmp(client_message, "Y")==0)
+			
+			toupper(buffer);
+			if(strcmp(buffer, "Y")==0)
 			{			
 				ok = 1;
 			}else{
-				message = "êtes vous prêt?Y/N \n";
-				write(joueurs[numJoueur-1].socket, message, strlen(message));
+				buffer = "êtes vous prêt?Y/N \n";
+				write(joueurs[numJoueur-1].socket, buffer, strlen(buffer));
 			}
 		}
 	}while(ok == 0);
@@ -222,16 +225,19 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 		initialiser_tab_des(tab_des);
 		for(i = 0; i < NB_DES; i++)
 		{
+			puts("test");
 			tab_des[i] = rand()%(NB_VALEUR_DE-1)+1;
-			sprintf(lance_de_des,"%d",tab_des[i]);
+			sprintf(de,"%d",tab_des[i]);
+			strcat(lance_de_des, de);
 			strcat(lance_de_des, "|");
 		}
+		strcat(lance_de_des,"\n");
 		
 		//on affiche le tableau côté client
 		for (i = 0; i < NB_JOUEURS; i++)
 		{
-			message = "Résultat du lancer: \n du joueur";
-			write(joueurs[i].socket, message, strlen(message));
+			buffer = "Résultat du lancer: \n du joueur";
+			write(joueurs[i].socket, buffer, strlen(buffer));
 			write(joueurs[i].socket, lance_de_des, strlen(lance_de_des));
 		}
 		
@@ -249,6 +255,25 @@ void initialiser_tab_des(int tab_des[])
 	}
 	
 }
+
+int read_client(int sock, char *buffer)
+{
+   int n = 0;
+
+   if((n = recv(sock, buffer, sizeof(buffer), 0)) < 0)
+   {
+      perror("recv()");
+      /* if recv error we disonnect the client */
+      n = 0;
+   }
+
+   buffer[n] = 0;
+
+   return n;
+}
+
+
+
 
 
 
