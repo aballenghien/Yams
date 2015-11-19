@@ -8,13 +8,20 @@ client <adresse-serveur> <message-a-transmettre>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <string.h>
+#include <unistd.h>
+
+
+#define BUF_SIZE 256
+#define PORT 5000
 
 typedef struct sockaddr 	sockaddr;
 typedef struct sockaddr_in 	sockaddr_in;
 typedef struct hostent 		hostent;
 typedef struct servent 		servent;
 
-void initialiser_buffer(char *buffer);
+ 
+void write_server(int sock, const char *buffer);
+int read_server(int sock, char *buffer);
 int str_istr (const char *cs, const char *ct);
 int main(int argc, char **argv) {
   
@@ -23,10 +30,11 @@ int main(int argc, char **argv) {
     sockaddr_in adresse_locale; 	/* adresse de socket local */
     hostent *	ptr_host; 		/* info sur une machine hote */
     servent *	ptr_service; 		/* info sur service */
-    char 	buffer[256];
+    char 	buffer[BUF_SIZE];
     char *	prog; 			/* nom du programme */
     char *	host; 			/* nom de la machine distante */
     char *	mesg; 			/* message envoyé */
+    fd_set rdfs;
      
     if (argc != 2) {
 	perror("usage : client <adresse-serveur> <message-a-transmettre>");
@@ -64,7 +72,7 @@ int main(int argc, char **argv) {
     
     /*-----------------------------------------------------------*/
     /* SOLUTION 2 : utiliser un nouveau numero de port */
-    adresse_locale.sin_port = htons(5000);
+    adresse_locale.sin_port = htons(PORT);
     /*-----------------------------------------------------------*/
     
     printf("numero de port pour la connexion au serveur : %d \n", ntohs(adresse_locale.sin_port));
@@ -97,23 +105,56 @@ int main(int argc, char **argv) {
     printf("message envoye au serveur. \n");
                 
     /* lecture de la reponse en provenance du serveur */
-    while((longueur = read(socket_descriptor, buffer, sizeof(buffer))) > 0) {
-		/* erreur trouver comment retrouver une sous chaine de caractère, analyser le contenu
-		 * du buffer pour savoir quel cas utiliser, ne fonctionne pas pour le moment */
-		if (strcmp(buffer, "Une partie est déjà commencée") == 0){
+//    while((longueur = read(socket_descriptor, buffer, sizeof(buffer))) > 0) {
+	while(1){
+		FD_ZERO(&rdfs); 
+		FD_SET(STDIN_FILENO, &rdfs);
+		FD_SET(socket_descriptor, &rdfs);
+		
+		if(select(socket_descriptor+ 1, &rdfs, NULL,  NULL, NULL )== -1)
+		{
+			perror("select()");
+			exit(1);
+		}
+		
+		if(FD_ISSET(STDIN_FILENO, &rdfs))
+		{
+			fgets(buffer, BUF_SIZE - 1, stdin);
+			{
+				char *p = NULL;
+				p = strstr(buffer, "\n");
+				if(p != NULL)
+				{
+					*p = 0;
+				}else{
+					buffer[BUF_SIZE - 1] = 0;
+				}
+			}
+			write_server(socket_descriptor, buffer);
+			
+		}else if(FD_ISSET(socket_descriptor, &rdfs))
+		{
+			int n = read_server(socket_descriptor, buffer);
+			if(n == 0)
+			{
+				printf("Server disconnected !\n");
+				break;
+			}
+			puts(buffer);
+		}
+	/*	if (strcmp(buffer, "Une partie est déjà commencée") == 0){
 			write(1,buffer,longueur);
 			close(socket_descriptor);
 			exit(0);
 		}else{
 			write(1,buffer,longueur);
 		}
-		if (str_istr(buffer, "\n C'est à votre tour de lancer les dés, êtes vous prêt?Y/N \n") >= 0 
-			|| str_istr(buffer, "êtes vous prêt?Y/N \n") >= 0)
+		if (str_istr(buffer, "Y") > 0)
 			{
-				printf("tour");
+				puts("tour");
 				scanf("%s",mesg);
 				write(socket_descriptor, mesg, strlen(mesg));
-			}
+			}*/
 	}
 	
     
@@ -127,18 +168,34 @@ int main(int argc, char **argv) {
     
 }
 
-void initialiser_buffer(char *buffer)
+
+int read_server(int sock, char *buffer)
 {
-	int i;
-	int l = strlen(buffer);
-	for(i=0;i<l;i++)
-	{
-		buffer[i] = '\0';
-	}
+   int n = 0;
+
+   if((n = recv(sock, buffer, BUF_SIZE - 1, 0)) < 0)
+   {
+      perror("recv()");
+      exit(1);
+   }
+
+   buffer[n] = 0;
+
+   return n;
+}
+
+void write_server(int sock, const char *buffer)
+{
+   if(send(sock, buffer, strlen(buffer), 0) < 0)
+   {
+      perror("send()");
+      exit(1);
+   }
 }
 
 int str_istr (const char *ct,const char *cs)
 {
+	puts("test");
    int index = -1;
    if (cs != NULL && ct != NULL)
    {
