@@ -158,8 +158,8 @@ void jouer_partie_yams(joueur joueurs[])
 {
 	int numPartie;
 	int numJoueur;
-	int tab_des[NB_DES];
-	int tab_score[NB_JOUEURS][NB_PARTIES+1];
+    int tab_des[NB_DES];
+    int	tab_score[NB_JOUEURS][NB_PARTIES+1];
 	
 	numPartie = 1;
 	int i;
