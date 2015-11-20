@@ -19,6 +19,10 @@
 #define NB_PARTIES 10
 #define NB_VALEUR_DE 6
 #define BUF_SIZE 256
+#define PT_YAMS 50
+#define PT_CARRE 40
+#define PT_BRELAN 10
+#define PT_FULL 30
 
 typedef struct hostent hostent;
 typedef struct servent servent;
@@ -36,8 +40,9 @@ joueur;
 void *connection_handler(void *);
 void jouer_partie_yams(joueur joueurs[], char *buffer);
 void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]);
-void calculer_score(int numJoueur, int numPartie, int tab_des[], int *tab_score);
+void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS]);
 void initialiser_tab_des(int tab_des[]);
+void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS]);
 int read_client(int sock, char *buffer);
  
 int main(int argc , char *argv[])
@@ -118,7 +123,7 @@ int main(int argc , char *argv[])
 			sprintf(messageJoueur,"Vous êtes le joueur : %d \n",nb_connexions+1);
 			write(client_sock,messageJoueur, strlen(messageJoueur));
 			
-		}else{
+	}else{
 			// indiquer au client que le nombre de joueur est atteint
 			sprintf(buffer, "erreur");
 			write(client_sock,buffer, strlen(buffer));
@@ -132,7 +137,7 @@ int main(int argc , char *argv[])
 			// débuter la partie une fois que tous les joueurs ont rejoint la partie
 			sleep(5);
 			jouer_partie_yams(joueurs, buffer);
-		}
+	}
     }
     
     
@@ -161,7 +166,7 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 	int numPartie;
 	int numJoueur;
 	int tab_des[NB_DES];
-	int tab_score[NB_JOUEURS][NB_PARTIES+1];
+	int tab_score[NB_PARTIES+1][NB_JOUEURS];
 	
 	numPartie = 1;
 	int i;
@@ -171,7 +176,8 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 		sprintf(buffer,"Bonjour tout le monde\n");
 		write(joueurs[i].socket,buffer, strlen(buffer));
 	}
-	
+	// Initialiser le tableau des scores
+	initialiser_tab_score(tab_score);
 	//les joueurs joueront  en tout 10 fois chacun leur tour 
 	for(numPartie = 1; numPartie <= NB_PARTIES; numPartie++)
 	{
@@ -179,6 +185,8 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 		{
 			// remplissage du tableau avec des valeurs aléatoire du dés
 			lancer_des(joueurs, numJoueur, tab_des);
+			calculer_score(numJoueur,numPartie,tab_des,tab_score);
+			
 		}
 	}
 	
@@ -250,6 +258,18 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 	
 }
 
+void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS])
+{
+	int i,j ; // parcourir le tableau à deux dimensions
+	for (i=0; i<= NB_PARTIES;i++)
+	{
+	   for (j=0; j<NB_JOUEURS; j++)
+	   {
+	      tab_score[i][j] = 0;	
+	   }	
+	}
+}
+
 void initialiser_tab_des(int tab_des[])
 {
 	int i;
@@ -258,6 +278,65 @@ void initialiser_tab_des(int tab_des[])
 		tab_des[i] = 0;
 	}
 	
+}
+
+void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS])
+{
+	int Brelan, Carre, Full, Yams, Double, Chance;
+	int Val1, Val2, Val3, Val4, Val5, Val6;
+	int nb_point;
+	int i;
+	
+	// Initialisation des variables
+	Val1=0;Val2=0;Val3=0;Val4=0;Val5=0;Val6=0;
+	Brelan=0;Carre=0;Full=0;Yams=0;Double=0;Chance=0;
+
+	// Parcours du tableau des dés pour classer les différentes valeurs obtenues
+	for(i=0;i< NB_DES;i++){
+		switch (tab_des[i]){
+		   case 1: Val1++;break;
+		   case 2: Val2++;break;
+		   case 3: Val3++;break;
+		   case 4: Val4++;break;
+		   case 5: Val5++;break;
+		   case 6: Val6++;break;
+		}
+		Chance = Chance + tab_des[i];
+	}
+
+	// Calcul du score
+	// le YAMS consiste à avoir les 5 dés d'une même valeur
+	if (Val6 == 5 || Val5 == 5 || Val4 == 5 || Val3 == 5 || Val2 == 5 || Val1 == 5){
+	   Yams = 1;
+	   nb_point = Chance + PT_YAMS;
+	}   
+	// le CARRE consiste à avoir 4 dés d'une même valeur
+	if (Val6 == 4 || Val5 == 4 || Val4 == 4 || Val3 == 4 || Val2 == 4 || Val1 == 4){
+	   Carre = 1;
+	   nb_point = Chance + PT_CARRE;
+	}
+	// le BRELAN consiste à avoir 3 dés d'une même valeur
+	if (Val6 == 3 || Val5 == 3 || Val4 == 3 || Val3 == 3 || Val2 == 3 || Val1 == 3){
+	   Brelan = 1;
+	   nb_point = Chance + PT_BRELAN;
+	}
+	if (Val6 == 2 || Val5 == 2 || Val4 == 2 || Val3 == 2 || Val2 == 2 || Val1 == 2){
+	   Double = 1;
+	   // Le FULL consiste à avoir un brelan et un double
+	   if (Brelan == 1){
+	      Full = 1;
+	      nb_point = Chance + PT_FULL;
+	   }
+	}
+	if ((Yams != 1 && Brelan != 1 && Full != 1 && Carre != 1)&&
+	   (Val6 <= 2 || Val5 <= 2 || Val4 <= 2 || Val3 <= 2 || Val2 <= 2 || Val1 <= 2)){
+	         nb_point = Chance ;
+	}
+
+	// Remplissage du tableau des scores
+	tab_score[numPartie][numJoueur] = nb_point;
+	tab_score[numPartie+1][numJoueur] = tab_score[numPartie+1][numJoueur] + nb_point;
+   
 }
 
 int read_client(int sock, char *buffer)

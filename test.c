@@ -29,7 +29,7 @@ joueur;
 
 //void jouer_partie_yams(joueur joueurs[]);
 void lancer_des(joueur joueurs[], int tab_des[]);
-//void calculer_score(int numJoueur, int numPartie, int *tab_des, int *tab_score);
+void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS]);
 void initialiser_tab_des(int tab_des[]);
 void initialiser_tab_score (int tab_score[NB_PARTIES+1][NB_JOUEURS]);
 
