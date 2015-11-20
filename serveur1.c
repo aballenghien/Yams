@@ -188,6 +188,7 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 	char tour[26];
 	char *buffer, client_message[1];
 	int i, read_size;
+	int k;
 	char lance_de_des[19];
 	int ok;
 	char de[1];
@@ -198,8 +199,11 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 	{
 		sprintf(tour, "C'est le tour du joueur %d", numJoueur);
 		write(joueurs[i].socket, tour, strlen(tour));
+		tour[25] = 0;
 	}
+	puts("test"); 
 	sprintf(buffer, "\n C'est à votre tour de lancer les dés, êtes vous prêt?Y/N \n");
+	printf("%s",buffer);
 	write(joueurs[numJoueur-1].socket, buffer, strlen(buffer));
 	ok = 0;
 	do{
@@ -221,13 +225,13 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 	
 	if(ok == 1)
 	{
-		// on remplit le tableau avec 5 valeurs aléatoire comprises en tre 1 et 6
+		// on remplit le tableau avec 5 valeurs aléatoires comprises entre 1 et 6
 		initialiser_tab_des(tab_des);
-		for(i = 0; i < NB_DES; i++)
+		
+		for(k = 0; k < NB_DES; k++)
 		{
-			puts("test");
-			tab_des[i] = rand()%(NB_VALEUR_DE-1)+1;
-			sprintf(de,"%d",tab_des[i]);
+			tab_des[k] = rand()%(NB_VALEUR_DE-1)+1;
+			sprintf(de,"%d",tab_des[k]);
 			strcat(lance_de_des, de);
 			strcat(lance_de_des, "|");
 		}
@@ -236,7 +240,7 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 		//on affiche le tableau côté client
 		for (i = 0; i < NB_JOUEURS; i++)
 		{
-			buffer = "Résultat du lancer: \n du joueur";
+			buffer = "Résultat du lancer du joueur: \n ";
 			write(joueurs[i].socket, buffer, strlen(buffer));
 			write(joueurs[i].socket, lance_de_des, strlen(lance_de_des));
 		}
