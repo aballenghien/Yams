@@ -31,7 +31,7 @@ joueur;
 void lancer_des(joueur joueurs[], int tab_des[]);
 //void calculer_score(int numJoueur, int numPartie, int *tab_des, int *tab_score);
 void initialiser_tab_des(int tab_des[]);
-void initialiser_tab_score (int tab_score[][]);
+void initialiser_tab_score (int tab_score[NB_PARTIES+1][NB_JOUEURS]);
 
 int main()
 {
@@ -40,9 +40,9 @@ int main()
     joueur 			joueurs[NB_JOUEURS];
     char 			messageJoueur[25];
     int				tab_des[5];
-    int				score[NB_JOUEURS][NUM_PARTIE+1]
+    int				tab_score[NB_PARTIES+1][NB_JOUEURS];
 
-	Initialiser_tab_score(score);	
+	initialiser_tab_score(tab_score);	
 	lancer_des(joueurs,tab_des);
 }
 
@@ -115,19 +115,19 @@ void initialiser_tab_des(int tab_des[])
 	for(i = 0; i < NB_DES; i++)
 	{
 		tab_des[i] = 0;
-		printf("%d ",tab_des[i]);
 	}
 	
 }
 
-void initialiser_tab_score (int tab_score[][])
+void initialiser_tab_score (int tab_score[NB_PARTIES+1][NB_JOUEURS])
 {
 	int i,j ; // parcourir le tableau à deux dimensions
-	for (i=0; i< NB_JOUEURS;i++)
+	for (i=0; i<= NB_PARTIES;i++)
 	{
-	   for (j=0; i=NB_PARTIE; j++)
+	   for (j=0; j<NB_JOUEURS; j++)
 	   {
-	      tab_score[i][j] = 0;	
+	      tab_score[i][j] = 0;
+              printf("%d ",tab_score[i][j]);	
 	   }	
 	}
 }
