@@ -136,7 +136,7 @@ void initialiser_tab_score (int tab_score[NB_PARTIES+1][NB_JOUEURS])
 	      tab_score[i][j] = 0;	
 	   }	
 	}
-	printf("total : %d ", tab_score[NB_PARTIES+1][NB_JOUEURS]); 
+	printf("total : %d ", tab_score[NB_PARTIES][NB_JOUEURS]); 
 }
 
 void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS])
@@ -204,10 +204,10 @@ void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[N
 	numJoueur = 2;
 	// Remplissage du tableau des scores
 	tab_score[numPartie][numJoueur] = nb_point;
-	printf(" total joueur : %d ", tab_score[NB_PARTIES+1][numJoueur]);
-	tab_score[NB_PARTIES+1][numJoueur] = tab_score[NB_PARTIES+1][numJoueur] + nb_point;
+	printf(" total joueur : %d ", tab_score[NB_PARTIES][numJoueur]);
+	tab_score[NB_PARTIES][numJoueur] = tab_score[NB_PARTIES][numJoueur] + nb_point;
 	
 	printf("Resultat joueur : %d ", tab_score[numPartie][numJoueur]);
-	printf("total : %d ",tab_score[NB_PARTIES+1][numJoueur]);
+	printf("total : %d ",tab_score[NB_PARTIES][numJoueur]);
    
 }
