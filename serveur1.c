@@ -43,6 +43,7 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]);
 void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS]);
 void initialiser_tab_des(int tab_des[]);
 void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS]);
+void afficher_score(int tab_score[NB_PARTIES+1][NB_JOUEURS], int numJoueur, int numPartie);
 int read_client(int sock, char *buffer);
  
 int main(int argc , char *argv[])
@@ -335,7 +336,7 @@ void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[N
 
 	// Remplissage du tableau des scores
 	tab_score[numPartie][numJoueur] = nb_point;
-	tab_score[numPartie+1][numJoueur] = tab_score[numPartie+1][numJoueur] + nb_point;
+	tab_score[NB_PARTIES+1][numJoueur] = tab_score[NB_PARTIES+1][numJoueur] + nb_point;
    
 }
 

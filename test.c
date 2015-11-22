@@ -14,6 +14,10 @@
 #define NB_DES 5
 #define NB_PARTIES 10
 #define NB_VALEUR_DE 6
+#define PT_YAMS 50
+#define PT_CARRE 40
+#define PT_BRELAN 10
+#define PT_FULL 30
 
 typedef struct 
 {
@@ -41,9 +45,12 @@ int main()
     char 			messageJoueur[25];
     int				tab_des[5];
     int				tab_score[NB_PARTIES+1][NB_JOUEURS];
+    int				numJoueur;
+	int			numPartie; 
 
 	initialiser_tab_score(tab_score);	
 	lancer_des(joueurs,tab_des);
+	calculer_score(numJoueur,numPartie,tab_des,tab_score);
 }
 
 void lancer_des(joueur joueurs[], int tab_des[]){
@@ -83,7 +90,7 @@ void lancer_des(joueur joueurs[], int tab_des[]){
 	
 	if(ok == 1)
 	{*/
-		// on remplit le tableau avec 5 valeurs aléatoire comprises en tre 1 et 6
+		// on remplit le tableau avec 5 valeurs aléatoire comprises entre 1 et 6
 		initialiser_tab_des(tab_des);
 		for(i = 0; i < NB_DES; i++)
 		{
@@ -122,12 +129,85 @@ void initialiser_tab_des(int tab_des[])
 void initialiser_tab_score (int tab_score[NB_PARTIES+1][NB_JOUEURS])
 {
 	int i,j ; // parcourir le tableau à deux dimensions
-	for (i=0; i<= NB_PARTIES;i++)
+	for (i=0; i<= NB_PARTIES+1;i++)
 	{
 	   for (j=0; j<NB_JOUEURS; j++)
 	   {
-	      tab_score[i][j] = 0;
-              printf("%d ",tab_score[i][j]);	
+	      tab_score[i][j] = 0;	
 	   }	
 	}
+	printf("total : %d ", tab_score[NB_PARTIES+1][NB_JOUEURS]); 
+}
+
+void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS])
+{
+	int Brelan, Carre, Full, Yams, Double, Chance;
+	int Val1, Val2, Val3, Val4, Val5, Val6;
+	int nb_point;
+	int i;
+	
+	// Initialisation des variables
+	Val1=0;Val2=0;Val3=0;Val4=0;Val5=0;Val6=0;
+	Brelan=0;Carre=0;Full=0;Yams=0;Double=0;Chance=0;
+
+	// Parcours du tableau des dés pour classer les différentes valeurs obtenues
+	for(i=0;i< NB_DES;i++){
+		switch (tab_des[i]){
+		   case 1: Val1++;break;
+		   case 2: Val2++;break;
+		   case 3: Val3++;break;
+		   case 4: Val4++;break;
+		   case 5: Val5++;break;
+		   case 6: Val6++;break;
+		}
+		Chance = Chance + tab_des[i];
+	}
+
+	// Calcul du score
+	// le YAMS consiste à avoir les 5 dés d'une même valeur
+	printf("valeur 1 : %d \n",Val1);
+	printf("valeur 2 : %d \n",Val2);
+	printf("valeur 3 : %d \n",Val3);
+	printf("valeur 4 : %d \n",Val4);
+	printf("valeur 5 : %d \n",Val5);
+	printf("valeur 6 : %d \n",Val6);
+	printf("chance : %d \n",Chance);
+
+	if (Val6 == 5 || Val5 == 5 || Val4 == 5 || Val3 == 5 || Val2 == 5 || Val1 == 5){
+	   Yams = 1;
+	   nb_point = Chance + PT_YAMS;
+	}   
+	// le CARRE consiste à avoir 4 dés d'une même valeur
+	if (Val6 == 4 || Val5 == 4 || Val4 == 4 || Val3 == 4 || Val2 == 4 || Val1 == 4){
+	   Carre = 1;
+	   nb_point = Chance + PT_CARRE;
+	}
+	// le BRELAN consiste à avoir 3 dés d'une même valeur
+	if (Val6 == 3 || Val5 == 3 || Val4 == 3 || Val3 == 3 || Val2 == 3 || Val1 == 3){
+	   Brelan = 1;
+	   nb_point = Chance + PT_BRELAN;
+	}
+	if (Val6 == 2 || Val5 == 2 || Val4 == 2 || Val3 == 2 || Val2 == 2 || Val1 == 2){
+	   Double = 1;
+	   // Le FULL consiste à avoir un brelan et un double
+	   if (Brelan == 1){
+	      Full = 1;
+	      nb_point = Chance + PT_FULL;
+	   }
+	}
+	if ((Yams != 1 && Brelan != 1 && Full != 1 && Carre != 1)&&
+	   (Val6 <= 2 || Val5 <= 2 || Val4 <= 2 || Val3 <= 2 || Val2 <= 2 || Val1 <= 2)){
+	         nb_point = Chance ;
+	}
+	printf(" nombre de point : %d ", nb_point);
+	numPartie = 1;
+	numJoueur = 2;
+	// Remplissage du tableau des scores
+	tab_score[numPartie][numJoueur] = nb_point;
+	printf(" total joueur : %d ", tab_score[NB_PARTIES+1][numJoueur]);
+	tab_score[NB_PARTIES+1][numJoueur] = tab_score[NB_PARTIES+1][numJoueur] + nb_point;
+	
+	printf("Resultat joueur : %d ", tab_score[numPartie][numJoueur]);
+	printf("total : %d ",tab_score[NB_PARTIES+1][numJoueur]);
+   
 }
