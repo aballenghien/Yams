@@ -129,14 +129,13 @@ void initialiser_tab_des(int tab_des[])
 void initialiser_tab_score (int tab_score[NB_PARTIES+1][NB_JOUEURS])
 {
 	int i,j ; // parcourir le tableau à deux dimensions
-	for (i=0; i<= NB_PARTIES+1;i++)
+	for (i=1; i<= NB_PARTIES+1;i++)
 	{
-	   for (j=0; j<NB_JOUEURS; j++)
+	   for (j=1; j<=NB_JOUEURS; j++)
 	   {
 	      tab_score[i][j] = 0;	
 	   }	
-	}
-	printf("total : %d ", tab_score[NB_PARTIES][NB_JOUEURS]); 
+	} 
 }
 
 void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS])
@@ -199,15 +198,39 @@ void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[N
 	   (Val6 <= 2 || Val5 <= 2 || Val4 <= 2 || Val3 <= 2 || Val2 <= 2 || Val1 <= 2)){
 	         nb_point = Chance ;
 	}
-	printf(" nombre de point : %d ", nb_point);
 	numPartie = 1;
 	numJoueur = 2;
 	// Remplissage du tableau des scores
 	tab_score[numPartie][numJoueur] = nb_point;
-	printf(" total joueur : %d ", tab_score[NB_PARTIES][numJoueur]);
-	tab_score[NB_PARTIES][numJoueur] = tab_score[NB_PARTIES][numJoueur] + nb_point;
-	
-	printf("Resultat joueur : %d ", tab_score[numPartie][numJoueur]);
-	printf("total : %d ",tab_score[NB_PARTIES][numJoueur]);
+	tab_score[NB_PARTIES+1][numJoueur] = tab_score[NB_PARTIES+1][numJoueur] + nb_point;
    
+}
+
+void afficher_score(int tab_score,int numPartie, int numJoueur){
+
+	// Variables de la fonction
+	char partie [381];
+	char score [3];
+	int *point;
+	int k,j;
+
+	//Concatener chaque ligne du tableau en une chaîne de caractère
+	//Afficher la ligne de la partie en cours + les lignes précédentes
+	for (k=1;k <= numPartie;k++){
+	   printf("partie %d : ",numPartie);
+	   for (j=1;j<= numJoueur;j++){
+	      printf("%d ",tab_score[k][j]);
+	      //sprintf(score,"%d",point);
+	      //strcat(partie, score);			
+	   }
+	   strcat(partie, "\n");	
+	}
+	// Afficher la ligne du total
+	printf("total : ");
+	for (j=1;j<= numJoueur;j++){
+	   
+	   printf("%d ", tab_score[NB_PARTIES+1][j]);
+	  // sprintf(score,"%d",point);
+	  // strcat(partie,score);
+	}
 }

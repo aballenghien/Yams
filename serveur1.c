@@ -262,9 +262,9 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS])
 {
 	int i,j ; // parcourir le tableau à deux dimensions
-	for (i=0; i<= NB_PARTIES;i++)
+	for (i=1; i<= NB_PARTIES+1;i++)
 	{
-	   for (j=0; j<NB_JOUEURS; j++)
+	   for (j=1; j<=NB_JOUEURS; j++)
 	   {
 	      tab_score[i][j] = 0;	
 	   }	
@@ -336,7 +336,7 @@ void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[N
 
 	// Remplissage du tableau des scores
 	tab_score[numPartie][numJoueur] = nb_point;
-	tab_score[NB_PARTIES][numJoueur] = tab_score[NB_PARTIES][numJoueur] + nb_point;
+	tab_score[NB_PARTIES+1][numJoueur] = tab_score[NB_PARTIES+1][numJoueur] + nb_point;
 
 	//Afficher les scores aux joueurs
 	//afficher_score(tab_score);
@@ -344,10 +344,20 @@ void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[N
 }
 
 /*void afficher_score(int tab_score){
-
-	// concatener chaque ligne du tableau en une chaine de caractere
-	
-
+	char partie;
+	//Concatener chaque ligne du tableau en une chaîne de caractère
+	//Afficher la ligne de la partie en cours + les lignes précédentes
+	for (k=1;k <= numPartie;k++){
+	   sprintf(partie,"partie %d : ",numPartie);
+	   for (j=1;j<= numJoueur;j++){
+	      strcat(partie, tab_score[k][j]);			
+	   }
+	   strcat(partie, "\n");	
+	}
+	// Afficher la ligne du total
+	for (j=1;j<= numJoueur;j++){
+	   strcat(partie,tab_score[NB_PARTIE][j]);
+	}
 }*/
 
 int read_client(int sock, char *buffer)
