@@ -12,6 +12,7 @@
 #include<unistd.h>    //write
 #include<pthread.h> //for threading , link with lpthread
 #include<netdb.h>
+#include<unistd.h>
 
 #define TAILLE_MAX_NOM 256
 #define NB_JOUEURS 2
@@ -39,7 +40,7 @@ joueur;
 //the thread function
 void *connection_handler(void *);
 void jouer_partie_yams(joueur joueurs[], char *buffer);
-void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]);
+void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie);
 void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS]);
 void initialiser_tab_des(int tab_des[]);
 void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS]);
@@ -57,6 +58,7 @@ int main(int argc , char *argv[])
     char 			buffer[BUF_SIZE];
     joueur 			joueurs[NB_JOUEURS];
     char 			messageJoueur[25];
+    fd_set 			rdfs;
 
     gethostname(machine,TAILLE_MAX_NOM);		/* recuperation du nom de la machine */
     
@@ -168,6 +170,8 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 	int numJoueur;
 	int tab_des[NB_DES];
 	int tab_score[NB_PARTIES+1][NB_JOUEURS];
+	fd_set rdfs;
+	
 	
 	numPartie = 1;
 	int i;
@@ -180,12 +184,16 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 	// Initialiser le tableau des scores
 	initialiser_tab_score(tab_score);
 	//les joueurs joueront  en tout 10 fois chacun leur tour 
-	for(numPartie = 1; numPartie <= NB_PARTIES; numPartie++)
+	for(numPartie = 0; numPartie < NB_PARTIES; numPartie++)
 	{
-		for (numJoueur = 1; numJoueur <= NB_JOUEURS; numJoueur++)
-		{
+		for (numJoueur = 0; numJoueur < NB_JOUEURS; numJoueur++)
+		{			
+	
+		/*	FD_ZERO(&rdfs);
+			FD_SET(STDIN_FILENO, &rdfs);
+			FD_SET(joueurs[numJoueur*/
 			// remplissage du tableau avec des valeurs aléatoire du dés
-			lancer_des(joueurs, numJoueur, tab_des);
+			lancer_des(joueurs, numJoueur, tab_des, numPartie+1);
 			calculer_score(numJoueur,numPartie,tab_des,tab_score);
 			
 		}
@@ -193,9 +201,9 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 	
 }
 
-void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
+void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
 	char tour[26];
-	char *buffer, client_message[1];
+	char *buffer, client_message[1], bufferTest[66];
 	int i, read_size;
 	int k;
 	char lance_de_des[19];
@@ -206,28 +214,26 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 	//ne fonctionne pas pour l'instant
 	for (i = 0; i < NB_JOUEURS; i++)
 	{
-		sprintf(tour, "C'est le tour du joueur %d", numJoueur);
+		sprintf(tour, "Partie n°%d: C'est le tour du joueur %d", numPartie, joueurs[numJoueur].numeroJ);
 		write(joueurs[i].socket, tour, strlen(tour));
 		tour[25] = 0;
 	}
-	puts("test"); 
-	sprintf(buffer, "\n C'est à votre tour de lancer les dés, êtes vous prêt?Y/N \n");
-	printf("%s",buffer);
-	write(joueurs[numJoueur-1].socket, buffer, strlen(buffer));
+	sprintf(bufferTest, "\n C'est à votre tour de lancer les dés, êtes vous prêt?Y/N \n");
+	write(joueurs[numJoueur].socket, bufferTest, strlen(bufferTest));
 	ok = 0;
 	do{
 		
-		read_size = read_client(joueurs[numJoueur-1].socket, buffer);
+		read_size = read_client(joueurs[numJoueur].socket, bufferTest);
 		if(read_size > 0)
 		{
 			
 			toupper(buffer);
-			if(strcmp(buffer, "Y")==0)
+			if(strcmp(bufferTest, "Y")==0)
 			{			
 				ok = 1;
 			}else{
 				buffer = "êtes vous prêt?Y/N \n";
-				write(joueurs[numJoueur-1].socket, buffer, strlen(buffer));
+				write(joueurs[numJoueur].socket, bufferTest, strlen(bufferTest));
 			}
 		}
 	}while(ok == 0);
@@ -236,13 +242,17 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[]){
 	{
 		// on remplit le tableau avec 5 valeurs aléatoires comprises entre 1 et 6
 		initialiser_tab_des(tab_des);
-		
+		int m = 0;
+		lance_de_des[m] = 0;
 		for(k = 0; k < NB_DES; k++)
 		{
 			tab_des[k] = rand()%(NB_VALEUR_DE-1)+1;
 			sprintf(de,"%d",tab_des[k]);
 			strcat(lance_de_des, de);
-			strcat(lance_de_des, "|");
+			strcat(lance_de_des, "|");			
+			m = m+2;
+			lance_de_des[m] = 0;
+			puts(lance_de_des);
 		}
 		strcat(lance_de_des,"\n");
 		
