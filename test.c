@@ -46,7 +46,7 @@ int main()
     int				tab_des[5];
     int				tab_score[NB_PARTIES+1][NB_JOUEURS];
     int				numJoueur;
-	int			numPartie; 
+    int			        numPartie; 
 
 	initialiser_tab_score(tab_score);	
 	lancer_des(joueurs,tab_des);
@@ -61,7 +61,7 @@ void lancer_des(joueur joueurs[], int tab_des[]){
 	char messageJoueur[25];
 	//int ok;
 	
-	/* on attend que le joueur soir prêt pour lancer les dés
+	/*on attend que le joueur soir prêt pour lancer les dés
 	ne fonctionne pas pour l'instant
 	for (i = 0; i < NB_JOUEURS; i++)
 	{
@@ -91,7 +91,7 @@ void lancer_des(joueur joueurs[], int tab_des[]){
 	if(ok == 1)
 	{*/
 		// on remplit le tableau avec 5 valeurs aléatoire comprises entre 1 et 6
-		initialiser_tab_des(tab_des);
+		//initialiser_tab_des(tab_des);
 		for(i = 0; i < NB_DES; i++)
 		{
 			tab_des[i] = rand()%(NB_VALEUR_DE-1)+1;
@@ -126,16 +126,20 @@ void initialiser_tab_des(int tab_des[])
 	
 }
 
-void initialiser_tab_score (int tab_score[NB_PARTIES+1][NB_JOUEURS])
+void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS])
 {
-	int i,j ; // parcourir le tableau à deux dimensions
-	for (i=1; i<= NB_PARTIES+1;i++)
+	int i,j; // parcourir le tableau à deux dimensions
+	int partie;
+	for (i=0; i<= NB_PARTIES;i++)
 	{
-	   for (j=1; j<=NB_JOUEURS; j++)
+		printf("\n");
+	   for (j=0; j<NB_JOUEURS; j++)
 	   {
-	      tab_score[i][j] = 0;	
+	      tab_score[i][j] = 0;
+	      printf("%d ",tab_score[i][j]);	
 	   }	
-	} 
+	}
+	
 }
 
 void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS])
@@ -143,7 +147,7 @@ void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[N
 	int Brelan, Carre, Full, Yams, Double, Chance;
 	int Val1, Val2, Val3, Val4, Val5, Val6;
 	int nb_point;
-	int i;
+	int i,j;
 	
 	// Initialisation des variables
 	Val1=0;Val2=0;Val3=0;Val4=0;Val5=0;Val6=0;
@@ -198,39 +202,21 @@ void calculer_score(int numJoueur, int numPartie, int tab_des[], int tab_score[N
 	   (Val6 <= 2 || Val5 <= 2 || Val4 <= 2 || Val3 <= 2 || Val2 <= 2 || Val1 <= 2)){
 	         nb_point = Chance ;
 	}
-	numPartie = 1;
-	numJoueur = 2;
+	numPartie = 0;
+	numJoueur = 0;
 	// Remplissage du tableau des scores
 	tab_score[numPartie][numJoueur] = nb_point;
-	tab_score[NB_PARTIES+1][numJoueur] = tab_score[NB_PARTIES+1][numJoueur] + nb_point;
+	tab_score[NB_PARTIES][numJoueur] = tab_score[NB_PARTIES][numJoueur] + nb_point;
+        
+	
+	for (i=0; i<= NB_PARTIES;i++)
+	{
+		printf("\n");
+	   for (j=0; j<NB_JOUEURS; j++)
+	   {
+	      printf("%d ",tab_score[i][j]);	
+	   }	
+	}
    
 }
 
-void afficher_score(int tab_score,int numPartie, int numJoueur){
-
-	// Variables de la fonction
-	char partie [381];
-	char score [3];
-	int *point;
-	int k,j;
-
-	//Concatener chaque ligne du tableau en une chaîne de caractère
-	//Afficher la ligne de la partie en cours + les lignes précédentes
-	for (k=1;k <= numPartie;k++){
-	   printf("partie %d : ",numPartie);
-	   for (j=1;j<= numJoueur;j++){
-	      printf("%d ",tab_score[k][j]);
-	      //sprintf(score,"%d",point);
-	      //strcat(partie, score);			
-	   }
-	   strcat(partie, "\n");	
-	}
-	// Afficher la ligne du total
-	printf("total : ");
-	for (j=1;j<= numJoueur;j++){
-	   
-	   printf("%d ", tab_score[NB_PARTIES+1][j]);
-	  // sprintf(score,"%d",point);
-	  // strcat(partie,score);
-	}
-}
