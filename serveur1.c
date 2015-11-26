@@ -210,7 +210,7 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
 	char *buffer, client_message[1], bufferTest[66];
 	int i, read_size;
 	int k;
-	char lance_de_des[19];
+	char lance_de_des[18];
 	int ok;
 	
 	// on attend que le joueur soir prêt pour lancer les dés
@@ -358,25 +358,27 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
 }
 
 void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score[NB_PARTIES+1][NB_JOUEURS]){
-	char partie[12];
+	char *partie;
 	int tailleLigne = NB_JOUEURS+1*2;
-	char ligne[tailleLigne+1];
+	char ligne[tailleLigne];	
 	int m;
 	int k,i,j;
+	
+	partie = "score :";
+	for (i = 0; i < NB_JOUEURS; i++)
+	{
+		write(joueurs[i].socket, partie, strlen(partie));
+	}
 	//Concatener chaque ligne du tableau en une chaîne de caractère
 	//Afficher la ligne de la partie en cours + les lignes précédentes
-	for (k=0;k < numPartie;k++){
+	for (k=0;k < numPartie+1;k++){
 		m = 0;
-		sprintf(partie,"partie %d : ",numPartie+1);
-		for (i = 0; i < NB_JOUEURS; i++)
-		{
-			write(joueurs[i].socket, partie, strlen(partie));
-		}
-		for (j=0;j< numJoueur;j++){
+		for (j=0;j< numJoueur+1;j++){
 			ligne[m] = tab_score[k][j]+'0';
 			puts(ligne);
 			ligne[m+1] = '|';
-			m = m+2;		
+			m = m+2;
+					
 		}
 		strcat(ligne, "\n");
 		for (i = 0; i < NB_JOUEURS; i++)
@@ -385,7 +387,7 @@ void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score
 		}
 	}
 	// Afficher la ligne du total
-	for (j=0;j< numJoueur;j++){
+	for (j=0;j< numJoueur+1;j++){
 		m = 0;
 		ligne[m] = tab_score[NB_PARTIES][j]+'0';
 		ligne[m+1] = '|';
