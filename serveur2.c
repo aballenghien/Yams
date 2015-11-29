@@ -15,7 +15,7 @@
 #include<unistd.h>
 
 #define TAILLE_MAX_NOM 256
-#define NB_JOUEURS 2
+//#define NB_JOUEURS 2
 #define NB_DES 5
 #define NB_PARTIES 10
 #define NB_VALEUR_DE 6
@@ -40,25 +40,30 @@ joueur;
 //the thread function
 void *connection_handler(void *);
 void jouer_partie_yams(joueur joueurs[], char *buffer);
-void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie);
-void calculer_score(joueur joueurs[], int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS]);
+void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie, int NB_JOUEURS);
+void calculer_score(joueur joueurs[], int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS], int NB_JOUEURS);
 void initialiser_tab_des(int tab_des[]);
-void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS]);
-void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score[NB_PARTIES+1][NB_JOUEURS]);
+void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS], int NB_JOUEURS);
+void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score[NB_PARTIES+1][NB_JOUEURS], int NB_JOUEURS);
 int read_client(int sock, char *buffer);
  
 int main(int argc , char *argv[])
 {
     int socket_desc , client_sock , c;
     struct sockaddr_in server , client;
-	hostent*		ptr_hote; 			/* les infos recuperees sur la machine hote */
+    hostent*		ptr_hote; 			/* les infos recuperees sur la machine hote */
     servent*		ptr_service; 			/* les infos recuperees sur le service de la machine */
-    char 			machine[TAILLE_MAX_NOM+1]; 	/* nom de la machine locale */
-    int 			nb_connexions;
-    char 			buffer[BUF_SIZE];
-    joueur 			joueurs[NB_JOUEURS];
-    char 			messageJoueur[25];
-    fd_set 			rdfs;
+    char 		machine[TAILLE_MAX_NOM+1]; 	/* nom de la machine locale */
+    int 		nb_connexions;
+    char 		buffer[BUF_SIZE];
+    joueur 		joueurs[NB_JOUEURS];
+    char 		messageJoueur[25];
+    fd_set 		rdfs;
+    // ajout du controle nombre de joueur
+    int 		NB_JOUEURS;
+    char *buffer1, client_message[1], bufferNb[44];
+    int read_size;
+    int ok;
 
     gethostname(machine,TAILLE_MAX_NOM);		/* recuperation du nom de la machine */
     
@@ -106,6 +111,8 @@ int main(int argc , char *argv[])
     c = sizeof(struct sockaddr_in);
 	pthread_t thread_id;
 	nb_connexions = 0;
+	//initialise le NB_JOUEUR à 1 (minimum)
+	NB_JOUEURS = 1;
     while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)))
     {
         puts("Connection accepted");
@@ -132,18 +139,58 @@ int main(int argc , char *argv[])
 			write(client_sock,buffer, strlen(buffer));
 			sprintf(buffer,"Une partie est déjà commencée");
 			write(client_sock,buffer, strlen(buffer));
-		}        
+	      }        
         
         nb_connexions = nb_connexions + 1;
         puts("accept");
-        if(nb_connexions == NB_JOUEURS){
-			// débuter la partie une fois que tous les joueurs ont rejoint la partie
-			sleep(5);
-			jouer_partie_yams(joueurs, buffer);
+	// le premier joueur arrivé, a le choix de jouer seul ou jusqu'à 6 joueurs (maximum de joueurs autorisés)
+	if (nb_connexions = 1){
+	   sprintf(bufferNb, "\n Combien êtes-vous à jouer ?(1 à 6) \n");
+	   write(client_sock, bufferNb, strlen(bufferNb));
+	   ok = 0;
+	   do{
+		read_size = read_client(client_sock, bufferNb);
+		if(read_size > 0)
+		{
+			toupper(buffer1);
+			if(strcmp(bufferNb, "1")==0){ok = 1;}
+			else
+			{
+			   if (strcmp(bufferNb, "2")==0){ok = 1; NB_JOUEURS = 2;}
+			   else
+			   {
+				if (strcmp(bufferNb, "3")==0){ok = 1; NB_JOUEURS = 3;}
+				else
+				{
+				   if (strcmp(bufferNb, "4")==0){ok = 1; NB_JOUEURS = 4;}
+				   else
+				   {
+				      if (strcmp(bufferNb, "5")==0){ok = 1; NB_JOUEURS = 5;}
+				      else
+				      {
+					if (strcmp(bufferNb, "6")==0){ok = 1; NB_JOUEURS = 6;}
+					else{
+						buffer1 = "nombre de joueurs ? \n";
+						write(client_sock, bufferNb, strlen(bufferNb));
+					}
+				      }
+				   }
+			        }
+			    }
+			}
+		   }
+	   }while(ok == 0);
 	}
+	if(ok == 1)
+	{
+	   if(nb_connexions == NB_JOUEURS){
+		// débuter la partie une fois que tous les joueurs ont rejoint la partie
+		sleep(5);
+		jouer_partie_yams(joueurs, buffer);
+	   }
+    	}
+    
     }
-    
-    
     if (client_sock < 0)
     {
         perror("accept failed");
@@ -164,7 +211,7 @@ void *connection_handler(void *socket_desc)
     return 0;
 } 
 
-void jouer_partie_yams(joueur joueurs[], char *buffer)
+void jouer_partie_yams(joueur joueurs[], char *buffer, int NB_JOUEURS)
 {
 	int numPartie;
 	int numJoueur;
@@ -205,12 +252,12 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 	
 }
 
-void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
+void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie, int NB_JOUEURS){
 	char tour[26];
 	char *buffer, client_message[1], bufferTest[66];
 	int i, read_size;
 	int k;
-	char lance_de_des[18];
+	char lance_de_des[19];
 	int ok;
 	
 	// on attend que le joueur soir prêt pour lancer les dés
@@ -269,7 +316,7 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
 	
 }
 
-void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS])
+void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS], int NB_JOUEURS)
 {
 	int i,j ; // parcourir le tableau à deux dimensions
 	for (i=0; i<= NB_PARTIES;i++)
@@ -291,7 +338,7 @@ void initialiser_tab_des(int tab_des[])
 	
 }
 
-void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS])
+void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[], int tab_score[NB_PARTIES+1][NB_JOUEURS], int NB_JOUEURS)
 {
 	int brelan, carre, full, yams, doubles, chance;
 	int val1, val2, val3, val4, val5, val6;
@@ -357,46 +404,35 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
    
 }
 
-void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score[NB_PARTIES+1][NB_JOUEURS]){
-
+void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score[NB_PARTIES+1][NB_JOUEURS], int NB_JOUEURS){
 	char partie[12];
-	int tailleLigne = (NB_JOUEURS+1)*2;
-	char ligne[tailleLigne];
-
+	int tailleLigne = NB_JOUEURS+1*2;
+	char ligne[tailleLigne+1];
 	int m;
 	int k,i,j;
-	
-	partie = "score :";
-	for (i = 0; i < NB_JOUEURS; i++)
-	{
-		write(joueurs[i].socket, partie, strlen(partie));
-	}
 	//Concatener chaque ligne du tableau en une chaîne de caractère
 	//Afficher la ligne de la partie en cours + les lignes précédentes
-
-	for (k=0;k <= numPartie;k++){
+	for (k=0;k < numPartie;k++){
 		m = 0;
-		ligne[m] = 0;
-		sprintf(partie,"partie %d : ",k+1);
+		sprintf(partie,"partie %d : ",numPartie+1);
 		for (i = 0; i < NB_JOUEURS; i++)
 		{
 			write(joueurs[i].socket, partie, strlen(partie));
 		}
 		for (j=0;j< numJoueur;j++){
-
 			ligne[m] = tab_score[k][j]+'0';
 			puts(ligne);
 			ligne[m+1] = '|';
-			m = m+2;
-					
+			m = m+2;		
 		}
+		strcat(ligne, "\n");
 		for (i = 0; i < NB_JOUEURS; i++)
 		{
 			write(joueurs[i].socket, ligne, strlen(ligne));	
 		}
 	}
 	// Afficher la ligne du total
-	for (j=0;j< numJoueur+1;j++){
+	for (j=0;j< numJoueur;j++){
 		m = 0;
 		ligne[m] = tab_score[NB_PARTIES][j]+'0';
 		ligne[m+1] = '|';
