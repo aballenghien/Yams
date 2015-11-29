@@ -358,15 +358,16 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
 
 void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score[NB_PARTIES+1][NB_JOUEURS]){
 	char partie[12];
-	int tailleLigne = NB_JOUEURS+1*2;
+	int tailleLigne = (NB_JOUEURS+1)*2;
 	char ligne[tailleLigne];
 	int m;
 	int k,i,j;
 	//Concatener chaque ligne du tableau en une chaîne de caractère
 	//Afficher la ligne de la partie en cours + les lignes précédentes
-	for (k=0;k < numPartie;k++){
+	for (k=0;k <= numPartie;k++){
 		m = 0;
-		sprintf(partie,"partie %d : ",numPartie+1);
+		ligne[m] = 0;
+		sprintf(partie,"partie %d : ",k+1);
 		for (i = 0; i < NB_JOUEURS; i++)
 		{
 			write(joueurs[i].socket, partie, strlen(partie));
@@ -377,7 +378,6 @@ void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score
 			ligne[m+1] = '|';
 			m = m+2;		
 		}
-		strcat(ligne, "\n");
 		for (i = 0; i < NB_JOUEURS; i++)
 		{
 			write(joueurs[i].socket, ligne, strlen(ligne));	
