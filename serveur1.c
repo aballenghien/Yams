@@ -267,10 +267,10 @@ void afficher_des(int tab_des[],joueur joueurs[])
 {
 
 		int k,i;
-		char lance_de_des[NB_DES*2];
+		char lance_de_des[0];
 		char buffer[31];
 		char valeur_de[2];
-		initialiser_lance_de_des(lance_de_des);
+		lance_de_des[0] = 0;
 		for(k = 0; k < NB_DES; k++)
 		{
 			sprintf(valeur_de,"%d|",tab_des[k]);
@@ -285,6 +285,7 @@ void afficher_des(int tab_des[],joueur joueurs[])
 			write(joueurs[i].socket, buffer, strlen(buffer));
 			write(joueurs[i].socket, lance_de_des, strlen(lance_de_des));
 		}
+		printf("taille du tableau lance_de_des %d \n",strlen(lance_de_des));
 		// contrôle coté serveur
 		printf("dernier lancé : ");
 		for(k = 0; k < NB_DES; k++)
