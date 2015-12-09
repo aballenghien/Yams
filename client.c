@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     }
     
     printf("Connexion etablie avec le serveur. \n");
-    printf("*************************************************************************");
+    printf("*************************************************************************\n");
    
     /* lecture de la reponse en provenance du serveur */
 	while(1){
@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 				printf("Serveur déconnecté");
 				break;
 			}
-			printf("%s \n",buffer);
+			printf("%s",buffer);
 		}
 	
 	}
