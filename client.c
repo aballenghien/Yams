@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 			int n = read_server(socket_descriptor, buffer);
 			if(n == 0)
 			{
-				printf("Serveur déconnecté");
+				printf("Serveur déconnecté\n");
 				break;
 			}
 			printf("%s",buffer);

@@ -17,7 +17,7 @@
 #define TAILLE_MAX_NOM 256
 #define NB_JOUEURS 1
 #define NB_DES 5
-#define NB_PARTIES 1
+#define NB_PARTIES 10
 #define NB_VALEUR_DE 6
 #define BUF_SIZE 256
 #define PT_YAMS 50
@@ -61,6 +61,7 @@ int main(int argc , char *argv[])
     char 			messageJoueur[25]; // Assignation du numéro du joueur
     char			partie_terminee[23];
     fd_set 			rdfs;
+    int i;
 
     gethostname(machine,TAILLE_MAX_NOM);		/* recuperation du nom de la machine */
     
@@ -138,7 +139,10 @@ int main(int argc , char *argv[])
 			sleep(5);
 			jouer_partie_yams(joueurs, buffer);
 			sprintf(partie_terminee,"La partie est terminée\n");
-			write(client_sock,partie_terminee, strlen(partie_terminee));	
+			for(i=0; i< NB_JOUEURS; i++)
+			{
+				write(joueurs[i].socket,partie_terminee, strlen(partie_terminee));
+			}	
 			exit(0);
 		}
     }
@@ -201,11 +205,11 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 }
 
 void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
-	char tour[26];
+	char tour[20];
 	char *buffer, client_message[1], bufferTest[66];
 	int i, read_size;
 	int k;
-	char lance_de_des[NB_DES*2];
+	char lance_de_des[1];
 	int ok;
 	int m;
 	
@@ -219,7 +223,7 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
 			tour[25] = 0;
 		}
 	}
-	sprintf(bufferTest, "\n C'est à votre tour de lancer les dés, êtes vous prêt?Y/N\n");
+	sprintf(bufferTest, "C'est à votre tour de lancer les dés, êtes vous prêt?Y/N\n");
 	write(joueurs[numJoueur].socket, bufferTest, strlen(bufferTest));
 	ok = 0;
 	do{
@@ -296,6 +300,7 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
 	int nb_point;
 	int i;
 	char points[3];
+	char buffer[10];
 	
 	// Initialisation des variables
 	val1=0;val2=0;val3=0;val4=0;val5=0;val6=0;
@@ -320,16 +325,31 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
 	if ((val6 == 5) || (val5 == 5) || (val4 == 5) || (val3 == 5) || (val2 == 5) || (val1 == 5)){
 	   yams = 1;
 	   nb_point = chance + PT_YAMS;
+	   for(i=0; i< NB_JOUEURS; i++)
+		{
+			sprintf(buffer,"YAMS !!!");
+			write(joueurs[i].socket,buffer, strlen(buffer));
+		}
 	}   
 	// le CARRE consiste à avoir 4 dés d'une même valeur
 	if ((val6 == 4) || (val5 == 4) || (val4 == 4) || (val3 == 4) || (val2 == 4) || (val1 == 4)){
 	   carre = 1;
 	   nb_point = chance + PT_CARRE;
+	   for(i=0; i< NB_JOUEURS; i++)
+		{
+			sprintf(buffer,"CARRE !!!");
+			write(joueurs[i].socket,buffer, strlen(buffer));
+		}
 	}
 	// le BRELAN consiste à avoir 3 dés d'une même valeur
 	if ((val6 == 3) || (val5 == 3) || (val4 == 3) || (val3 == 3) || (val2 == 3) || (val1 == 3)){
 	   brelan = 1;
 	   nb_point = chance + PT_BRELAN;
+	   for(i=0; i< NB_JOUEURS; i++)
+		{
+			sprintf(buffer,"BRELAN !!!");
+			write(joueurs[i].socket,buffer, strlen(buffer));
+		}
 	}
 	if ((val6 == 2) || (val5 == 2) || (val4 == 2) || (val3 == 2) || (val2 == 2) || (val1 == 2)){
 	   doubles = 1;
@@ -337,6 +357,11 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
 	   if (brelan == 1){
 	      full = 1;
 	      nb_point = chance + PT_FULL;
+	      for(i=0; i< NB_JOUEURS; i++)
+		{
+			sprintf(buffer,"FULL !!!");
+			write(joueurs[i].socket,buffer, strlen(buffer));
+		}
 	   }
 	}
 	if (((yams != 1) && (brelan != 1) && (full != 1) && (carre != 1))&&
@@ -357,13 +382,13 @@ void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score
 	int c; // parcours de chaque client
 	char partie[10];
 	char ligne_scores[NB_JOUEURS*8];
-	char  score[4];
+	char score[4];
 	char total[6];
 	for (l = 0; l <= numPartie; l++){
 		initialiser_ligne_score(ligne_scores);
 		for (c = 0; c < NB_JOUEURS; c++)
 		{	
-			sprintf(score,"%d |", tab_score[l][c]);		
+			sprintf(score,"%d|", tab_score[l][c]);		
 			strcat(ligne_scores, score);
 		}
 		strcat(ligne_scores, "\n");
@@ -372,7 +397,6 @@ void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score
 			partie[0] = 0;
 			sprintf(partie,"Partie %d:",l+1);
 			write(joueurs[c].socket, partie, strlen(partie));
-			sleep(1);
 			write(joueurs[c].socket, ligne_scores, strlen(ligne_scores));
 		}
 		
@@ -380,14 +404,13 @@ void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score
 	initialiser_ligne_score(ligne_scores);
 	for (c = 0; c < NB_JOUEURS; c++)
 	{	
-		sprintf(score,"%d |", tab_score[NB_PARTIES][c]);		
+		sprintf(score,"%d|", tab_score[NB_PARTIES][c]);		
 		strcat(ligne_scores, score);
 	}
 	strcat(ligne_scores, "\n");
 	for(c = 0; c < NB_JOUEURS; c ++)
 	{
-		partie[0] = 0;
-		sprintf(total,"Total:");
+		sprintf(total,"Total:   ");
 		write(joueurs[c].socket, total, strlen(total));
 		write(joueurs[c].socket, ligne_scores, strlen(ligne_scores));
 	}
