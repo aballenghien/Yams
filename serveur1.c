@@ -15,9 +15,9 @@
 #include<unistd.h>
 
 #define TAILLE_MAX_NOM 256
-#define NB_JOUEURS 1
+#define NB_JOUEURS 2
 #define NB_DES 5
-#define NB_PARTIES 10
+#define NB_PARTIES 2
 #define NB_VALEUR_DE 6
 #define BUF_SIZE 256
 #define PT_YAMS 50
@@ -47,6 +47,8 @@ void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS]);
 void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score[NB_PARTIES+1][NB_JOUEURS]);
 int read_client(int sock, char *buffer);
 void initialiser_ligne_score(char ligne_scores[]);
+void afficher_des(int tab_des[], joueur joueurs[]);
+void initialiser_lance_de_des(char lance_de_des[]);
  
 int main(int argc , char *argv[])
 {
@@ -95,7 +97,7 @@ int main(int argc , char *argv[])
         perror("Echec de la liaison\n");
         return 1;
     }
-    puts("\nLiaison effectuée\n");
+    puts("Liaison effectuée\n");
      
     //Ecoute et attente de connexions
     listen(socket_desc , 3);
@@ -174,9 +176,9 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 	int numJoueur;
 	int tab_des[NB_DES];
 	int tab_score[NB_PARTIES+1][NB_JOUEURS];
+	char delim_partie[75];
 	fd_set rdfs;	
 	int i;
-	char *message;
 	
 	if (NB_JOUEURS > 1)
 	{
@@ -199,6 +201,11 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 			//Afficher les scores aux joueurs
 			afficher_score(joueurs,numPartie,numJoueur,tab_score);
 		}
+		for(i=0; i< NB_JOUEURS; i++)
+		{
+			sprintf(delim_partie,"-----------------------------------------------------------------------\n");
+			write(joueurs[i].socket,delim_partie, strlen(delim_partie));
+		}
 	}
 	
 	
@@ -206,12 +213,11 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 
 void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
 	char tour[20];
-	char *buffer, client_message[1], bufferTest[66];
+	char *buffer,  bufferTest[66];
 	int i, read_size;
 	int k;
 	char lance_de_des[1];
 	int ok;
-	int m;
 	
 	// on attend que le joueur soit prêt pour lancer les dés
 	if( NB_JOUEURS > 1)
@@ -247,28 +253,45 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
 	{
 		// on remplit le tableau avec 5 valeurs aléatoires comprises entre 1 et 6
 		initialiser_tab_des(tab_des);
-		m = 0;
-		lance_de_des[m] = 0;
+		
 		for(k = 0; k < NB_DES; k++)
 		{
-			tab_des[k] = rand()%(NB_VALEUR_DE-1)+1;
-			lance_de_des[m] = tab_des[k]+'0';
-			lance_de_des[m+1] = '|';	
-			m = m+2;
+			tab_des[k] = rand()%(NB_VALEUR_DE-1)+1;			
+		}
+		afficher_des(tab_des, joueurs);
+	}
+	
+}
+
+void afficher_des(int tab_des[],joueur joueurs[])
+{
+
+		int k,i;
+		char lance_de_des[NB_DES*2];
+		char buffer[31];
+		char valeur_de[2];
+		initialiser_lance_de_des(lance_de_des);
+		for(k = 0; k < NB_DES; k++)
+		{
+			sprintf(valeur_de,"%d|",tab_des[k]);
+			strcat(lance_de_des,valeur_de);
 			
 		}
 		strcat(lance_de_des,"\n");
 		//on affiche le tableau côté client
 		for (i = 0; i < NB_JOUEURS; i++)
 		{
-			buffer = "Résultat du lancer du joueur:";
+			sprintf(buffer,"Résultat du lancé du joueur:\n");
 			write(joueurs[i].socket, buffer, strlen(buffer));
 			write(joueurs[i].socket, lance_de_des, strlen(lance_de_des));
 		}
-		
-		
-	}
-	
+		// contrôle coté serveur
+		printf("dernier lancé : ");
+		for(k = 0; k < NB_DES; k++)
+		{
+			printf("%d|",tab_des[k]); 			
+		}
+		printf("\n");
 }
 
 void initialiser_tab_score(int tab_score[NB_PARTIES+1][NB_JOUEURS])
@@ -300,7 +323,7 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
 	int nb_point;
 	int i;
 	char points[3];
-	char buffer[10];
+	char buffer[43];
 	
 	// Initialisation des variables
 	val1=0;val2=0;val3=0;val4=0;val5=0;val6=0;
@@ -327,7 +350,7 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
 	   nb_point = chance + PT_YAMS;
 	   for(i=0; i< NB_JOUEURS; i++)
 		{
-			sprintf(buffer,"YAMS !!!");
+			sprintf(buffer,"++++++++++++++++YAMS !!!+++++++++++++++\n");
 			write(joueurs[i].socket,buffer, strlen(buffer));
 		}
 	}   
@@ -337,7 +360,7 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
 	   nb_point = chance + PT_CARRE;
 	   for(i=0; i< NB_JOUEURS; i++)
 		{
-			sprintf(buffer,"CARRE !!!");
+			sprintf(buffer,"+++++++++++++++CARRE !!!+++++++++++++++\n");
 			write(joueurs[i].socket,buffer, strlen(buffer));
 		}
 	}
@@ -347,7 +370,7 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
 	   nb_point = chance + PT_BRELAN;
 	   for(i=0; i< NB_JOUEURS; i++)
 		{
-			sprintf(buffer,"BRELAN !!!");
+			sprintf(buffer,"+++++++++++++++BRELAN !!!+++++++++++++++\n");
 			write(joueurs[i].socket,buffer, strlen(buffer));
 		}
 	}
@@ -358,10 +381,10 @@ void calculer_score(joueur joueurs[],int numJoueur, int numPartie, int tab_des[]
 	      full = 1;
 	      nb_point = chance + PT_FULL;
 	      for(i=0; i< NB_JOUEURS; i++)
-		{
-			sprintf(buffer,"FULL !!!");
-			write(joueurs[i].socket,buffer, strlen(buffer));
-		}
+			{
+				sprintf(buffer,"+++++++++++++++FULL !!!+++++++++++++++\n");
+				write(joueurs[i].socket,buffer, strlen(buffer));
+			}
 	   }
 	}
 	if (((yams != 1) && (brelan != 1) && (full != 1) && (carre != 1))&&
@@ -384,6 +407,7 @@ void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score
 	char ligne_scores[NB_JOUEURS*8];
 	char score[4];
 	char total[6];
+	// affichage côté client
 	for (l = 0; l <= numPartie; l++){
 		initialiser_ligne_score(ligne_scores);
 		for (c = 0; c < NB_JOUEURS; c++)
@@ -395,11 +419,21 @@ void afficher_score(joueur joueurs[],int numPartie, int numJoueur, int tab_score
 		for(c = 0; c < NB_JOUEURS; c ++)
 		{
 			partie[0] = 0;
-			sprintf(partie,"Partie %d:",l+1);
+			sprintf(partie,"Partie %d:",l+1);	
 			write(joueurs[c].socket, partie, strlen(partie));
 			write(joueurs[c].socket, ligne_scores, strlen(ligne_scores));
 		}
 		
+	}
+	//contrôle côté serveur
+	for (l = 0; l <= numPartie; l++){
+		printf("partie %d:", l+1);
+		for (c = 0; c < NB_JOUEURS; c++)
+		{	
+			printf("%d |",tab_score[l][c]);		
+			
+		}
+		printf("\n");
 	}
 	initialiser_ligne_score(ligne_scores);
 	for (c = 0; c < NB_JOUEURS; c++)
@@ -424,6 +458,15 @@ void initialiser_ligne_score(char ligne_scores[])
 	for(i = 0; i < NB_JOUEURS*2; i++)
 	{
 		ligne_scores[i] = 0;
+	}
+}
+
+void initialiser_lance_de_des(char lance_de_des[])
+{
+	int i;
+	for(i = 0; i < NB_JOUEURS*2; i++)
+	{
+		lance_de_des[i] = 0;
 	}
 }
 
