@@ -49,6 +49,8 @@ int read_client(int sock, char *buffer);
 void initialiser_ligne_score(char ligne_scores[]);
 void afficher_des(int tab_des[], joueur joueurs[]);
 void initialiser_lance_de_des(char lance_de_des[]);
+int relancer_des(joueur le_joueur);
+void debuter_tour(joueur joueurs[], int numJoueur, int tab_des[], int numPartie);
  
 int main(int argc , char *argv[])
 {
@@ -176,6 +178,8 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 	int numJoueur;
 	int tab_des[NB_DES];
 	int tab_score[NB_PARTIES+1][NB_JOUEURS];
+	int lance;
+	int nb_lances;
 	char delim_partie[75];
 	fd_set rdfs;	
 	int i;
@@ -195,8 +199,18 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 	{
 		for (numJoueur = 0; numJoueur < NB_JOUEURS; numJoueur++)
 		{		
+			lance = 1;
+			nb_lances = 1;
 			// remplissage du tableau avec des valeurs aléatoire du dés
+			debuter_tour(joueurs, numJoueur, tab_des, numPartie+1);
 			lancer_des(joueurs, numJoueur, tab_des, numPartie+1);
+			do{				
+				lance = relancer_des(joueurs[numJoueur]);
+				if (lance == 1){			
+					lancer_des(joueurs, numJoueur, tab_des, numPartie+1);
+					nb_lances ++;
+				}
+			}while(lance == 1 && nb_lances < 3);
 			calculer_score(joueurs, numJoueur,numPartie,tab_des,tab_score);
 			//Afficher les scores aux joueurs
 			afficher_score(joueurs,numPartie,numJoueur,tab_score);
@@ -210,15 +224,13 @@ void jouer_partie_yams(joueur joueurs[], char *buffer)
 	
 	
 }
-
-void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
+void debuter_tour (joueur joueurs[], int numJoueur, int tab_des[], int numPartie)
+{	
 	char tour[20];
 	char *buffer,  bufferTest[66];
 	int i, read_size;
-	int k;
 	char lance_de_des[1];
 	int ok;
-	
 	// on attend que le joueur soit prêt pour lancer les dés
 	if( NB_JOUEURS > 1)
 	{
@@ -249,17 +261,55 @@ void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
 		}
 	}while(ok == 0);
 	
-	if(ok == 1)
+}
+
+void lancer_des(joueur joueurs[], int numJoueur, int tab_des[], int numPartie){
+	
+	int k;
+	
+	// on remplit le tableau avec 5 valeurs aléatoires comprises entre 1 et 6
+	initialiser_tab_des(tab_des);
+	
+	for(k = 0; k < NB_DES; k++)
 	{
-		// on remplit le tableau avec 5 valeurs aléatoires comprises entre 1 et 6
-		initialiser_tab_des(tab_des);
-		
-		for(k = 0; k < NB_DES; k++)
-		{
-			tab_des[k] = rand()%(NB_VALEUR_DE-1)+1;			
-		}
-		afficher_des(tab_des, joueurs);
+		tab_des[k] = rand()%(NB_VALEUR_DE-1)+1;			
 	}
+	afficher_des(tab_des, joueurs);
+
+	
+}
+
+int relancer_des(joueur le_joueur)
+{
+	int lance;
+	char relance[39];
+	int ok;
+	int rst;
+	int read_size;
+	
+	sprintf(relance, "Souhaitez vous relancer les dés? Y/N\n");
+	write(le_joueur.socket, relance, strlen(relance));
+	ok = 0;
+	do{		
+		read_size = read_client(le_joueur.socket, relance);
+		if(read_size > 0)
+		{
+			
+			toupper(relance);
+			if(strcmp(relance, "Y")==0)
+			{			
+				ok = 1;
+				rst = 1;
+			}else if(strcmp(relance, "N")==0){
+				rst = 0;
+				ok = 1;
+			}else{
+				sprintf(relance,"Souhaitez vous relancer les dés? Y/N\n");
+				write(le_joueur.socket, relance, strlen(relance));
+			}
+		}
+	}while(ok == 0);
+	return (rst);
 	
 }
 
@@ -267,7 +317,7 @@ void afficher_des(int tab_des[],joueur joueurs[])
 {
 
 		int k,i;
-		char lance_de_des[0];
+		char lance_de_des[NB_DES*2];
 		char buffer[31];
 		char valeur_de[2];
 		lance_de_des[0] = 0;
@@ -285,7 +335,7 @@ void afficher_des(int tab_des[],joueur joueurs[])
 			write(joueurs[i].socket, buffer, strlen(buffer));
 			write(joueurs[i].socket, lance_de_des, strlen(lance_de_des));
 		}
-		printf("taille du tableau lance_de_des %d \n",strlen(lance_de_des));
+		//printf("taille du tableau lance_de_des %u \n",sizeof (lance_de_des));
 		// contrôle coté serveur
 		printf("dernier lancé : ");
 		for(k = 0; k < NB_DES; k++)
